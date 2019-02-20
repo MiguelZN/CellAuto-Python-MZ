@@ -2,7 +2,8 @@ import pygame,os,sys,random,math,time
 
 #file path of folder
 path = os.path.dirname(os.path.realpath(sys.argv[0]))
-iconpath = path+r"\cellautoicon.ico"
+#iconpath = path+r"\cellautoicon.ico"
+iconpath = path+r"/cellautoicon.ico"
 icon = pygame.image.load(iconpath)
 
 seconds = 0
@@ -35,7 +36,7 @@ startinglivingcells = 40
 cellidstart = startinglivingcells+1 #adds 1 to this everytime a new cell is created
 listoflivingcells = []
 gameRunning = True
-listofspecies = ["blue","white","red","green"] # types of species; 4 for now
+listofspecies = ["blue","white","red","green","purple","orange","pink","yellow"] # types of species; 4 for now
 strengthrange = (1,5)
 reproducepercentage = 50
 reproduceamount = 2
@@ -91,6 +92,7 @@ class Cell():
         else:
             return None
 
+        #SPECIES
         if(self.species=="red"):
             self.color = (250,0,0)
             #self.color[0] = self.color[0]+strengthcolorincrease
@@ -102,6 +104,15 @@ class Cell():
             #self.color[1] = self.color[1] + strengthcolorincrease
         elif(self.species=="white"):
             self.color= (250,250,250)
+        elif(self.species=="orange"):
+            self.color = (255, 140, 0)
+        elif (self.species == "purple"):
+            self.color = (216, 118, 252)
+        elif(self.species=="pink"):
+            self.color= (255, 0, 238)
+        elif(self.species=="yellow"):
+            self.color= (255, 204, 0)
+
 
 
 
@@ -371,7 +382,11 @@ while gameRunning:
     checkCells()
 
     #time.sleep(.02)
-    drawCells(listoflivingcells)
+
+    try:
+        drawCells(listoflivingcells)
+    except:
+        "DRAW ERROR"
 
 
 
