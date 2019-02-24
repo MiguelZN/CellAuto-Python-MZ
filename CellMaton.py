@@ -2,8 +2,14 @@ import pygame,os,sys,random,math,time
 
 #file path of folder
 path = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+#WINDOWS PATH
 #iconpath = path+r"\cellautoicon.ico"
+
+#macOS PATH
 iconpath = path+r"/cellautoicon.ico"
+
+
 icon = pygame.image.load(iconpath)
 
 seconds = 0
@@ -38,10 +44,13 @@ listoflivingcells = []
 gameRunning = True
 listofspecies = ["blue","white","red","green","purple","orange","pink","yellow"] # types of species; 4 for now
 strengthrange = (1,5)
-reproducepercentage = 50
+reproducepercentage = 40 #controls the chance that the cell can reproduce:  if chance<=reproducepercentage then reproduce
 reproduceamount = 2
 changeofreproduce = 10000 #out of 10000
 chanceofdying = 1 #5/100
+TIME_TO_REPRODUCE = 5
+MAX_AMOUNT_OF_CELLS = 300
+MAX_NEARBY_CELLS = 10
 
 #COLORS
 blue = (0,0,250)
@@ -53,7 +62,7 @@ black = (0,0,0)
 class Cell():
     def __init__(self,id, posnx, posny, species,strength):
         global seconds
-        self.cellid = id+1 #changes
+        self.cellid = createRandomID("abcdefghijklmnopqrstuvwxyz",10,5)
         self.posnx = 0 #DEFAULT: 0
         self.posny = 0 #DEFAULT: 0
         self.color = [0,0,0]
@@ -123,18 +132,19 @@ class Cell():
 
     def reproduce(self):
         #print(self.timealive)
-        if(self.canReproduce==False and self.timealive<10 and self.HasReproduced==False):
+        global TIME_TO_REPRODUCE
+        if(self.canReproduce==False and self.timealive<TIME_TO_REPRODUCE and self.HasReproduced==False and len(listoflivingcells)>MAX_AMOUNT_OF_CELLS):
             print("CANNOT REPRODUCE: TIMEALIVE:"+str(self.timealive))
             return None
 
         global cellidstart
         randx = random.choice((-10,10))
         randy = random.choice((-10, 10))
-        print("TIMEALIVE:"+str(self.timealive))
+        #print("TIMEALIVE:"+str(self.timealive))
         try:
             for i in range(reproduceamount):
+                #adds a new cell nearby the current cell
                 listoflivingcells.append(Cell(cellidstart,self.posnx+randx,self.posny+randy,self.species,random.randrange(strengthrange[0],strengthrange[1])))
-                cellidstart=+1
         except:
             print("REPRODUCE ERROR")
         self.HasReproduced = True
@@ -167,6 +177,27 @@ class Cell():
 
 #methods
 
+#Creates a random ID for each cell
+def createRandomID(string, number, idlength):
+    id = ""
+    for i in range(idlength):
+        random_char = string[random.randrange(0,len(string))]
+        random_num = str(random.randrange(0,number))
+
+        choice = random.randrange(0,2)
+
+        if(choice==0):
+            id+= random_char
+        else:
+            id+=random_num
+
+
+    print(id)
+    return id
+
+
+
+
 #adds livingcells to the game, takes in an empty list of cells
 def createLivingCells(list):
     for i in range(startinglivingcells):
@@ -178,7 +209,7 @@ def createLivingCells(list):
 
 
 def drawCells(celllist):
-    print(len(celllist))
+    #print(len(celllist))
     for cell in celllist:
 
         """
@@ -261,15 +292,18 @@ celltoremove = random.choice(("thiscell", "othercell"))
 def checkCells():
     radius = 3 #if cells are within a 3 pixel radius
 
-    try:
-        id = 0
-        for cell in listoflivingcells:
-            id +=1
+    # if(len(listoflivingcells)>150):
+    #     return;
 
-            cell.cellid = id
+    try:
+        for cell in listoflivingcells:
             cell.changeofdying()
             cell.checkCellSpeed()
             cell.increaseTimeAlive()
+
+            #Check if there's a lot of cells------
+            amount_of_nearby_cells = 0;
+
 
             #remove the cell once its strength is low
             if(cell.strength<=0 or cell.isalive==False):
@@ -278,12 +312,26 @@ def checkCells():
 
 
             for othercell in listoflivingcells:
+                #calculates the distance with one cell with another
+                distance = math.sqrt(math.pow((othercell.posnx-cell.posnx),2)+math.pow((othercell.posny-cell.posny),2))
 
                 if(cell.cellid==othercell.cellid and cell.species!=othercell.species):
-                    print("CELLID ERROR")
-                distance = math.sqrt(math.pow((othercell.posnx-cell.posnx),2)+math.pow((othercell.posny-cell.posny),2))
+                    print("CELLS HAVE SAME ID, CHANGING IT")
+                    cell.id = createRandomID("abcdefghijklmnopqrstuvwxyz",10,5)
+
+                if(amount_of_nearby_cells>MAX_NEARBY_CELLS):
+                    print("REMOVED THIS CELL DUE TO OVERPOPULATION")
+                    listoflivingcells.remove(cell)
+
+
+                if(othercell.cellid!=cell.cellid and distance<=30):
+                    amount_of_nearby_cells+=1
+
+
+
+
                 if(othercell.cellid!=cell.cellid and distance<=3):
-                        print("STILLWORKING")
+                        #print("STILLWORKING")
 
                         if (cell.cellid != othercell.cellid and cell.species == othercell.species):  # creates a new cell
                             chance = random.randrange(0, changeofreproduce)
@@ -291,13 +339,13 @@ def checkCells():
                             if (chance <= reproducepercentage):
                                 cell.reproduce()
                             # print(len(listoflivingcells))
-                            print("NEWCELL")
+                            #print("NEWCELL")
 
                         if(cell.strength> othercell.strength and cell.species!=othercell.species):
                             othercell.isalive = False
                             cell.speed+=1
                             cell.strength+=1
-                            print("CELL DEFEATED OTHERCELL")
+                            #print("CELL DEFEATED OTHERCELL")
                             chance = random.randrange(0,100)
 
                             if(chance<=30):
@@ -307,14 +355,14 @@ def checkCells():
                             cell.isalive = False
                             othercell.speed += 1
                             othercell.strength += 1
-                            print("OTHERCELL DEFEATED CELL")
+                            #print("OTHERCELL DEFEATED CELL")
                             chance = random.randrange(0, 100)
 
                             if (chance <= 30):
                                 othercell.reproduce()
 
                         elif(cell.strength==othercell.strength and cell.species!=othercell.species):
-                            print("EVENMATCH")
+                            #print("EVENMATCH")
                             if(celltoremove=="thiscell"):
                                 cell.isalive = False
                                 chance = random.randrange(0, 100)
@@ -368,7 +416,7 @@ while gameRunning:
     end = time.time()
 
     seconds = int(end-start)+1
-    print(seconds)
+    #print(seconds)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -380,8 +428,6 @@ while gameRunning:
 
     movedrawCells(listoflivingcells)
     checkCells()
-
-    #time.sleep(.02)
 
     try:
         drawCells(listoflivingcells)
